@@ -1,0 +1,11 @@
+sku,name,description,category,price,quantity
+SKU001,Widget Alpha,High-quality aluminum widget,Electronics,29.99,100
+SKU002,Gadget Beta,Compact daily-use gadget,Electronics,49.99,50
+SKU003,Supply Gamma,Industrial supply component,Industrial,15.00,200
+SKU004,Tool Delta,Heavy-duty power tool,Tools,89.99,30
+SKU005,Part Epsilon,Replacement part for machinery,Spare Parts,5.99,500
+SKU006,Module Zeta,Wireless communication module,Electronics,74.50,80
+SKU007,Bracket Eta,Steel mounting bracket,Industrial,12.25,350
+SKU008,Sensor Theta,Temperature and humidity sensor,Electronics,42.00,120
+SKU009,Valve Iota,Pressure relief valve,Industrial,33.75,90
+SKU010,Cable Kappa,Industrial-grade ethernet cable,Networking,8.99,1000
