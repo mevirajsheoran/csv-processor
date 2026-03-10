@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const uploadRoutes = require('./routes/upload.routes');
 const recordsRoutes = require('./routes/records.routes');
+const healthRoutes = require('./routes/health.routes');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 
@@ -13,6 +14,11 @@ app.use(express.json());
 
 // ─── Request Logging ────────────────────────────────
 app.use((req, _res, next) => {
+  // Skip logging health checks to avoid noise
+  if (req.path === '/api/health') {
+    return next();
+  }
+
   logger.info('Incoming request', {
     method: req.method,
     path: req.path,
@@ -24,7 +30,7 @@ app.use((req, _res, next) => {
 // ─── Routes ─────────────────────────────────────────
 app.use('/api/upload', uploadRoutes);
 app.use('/api/records', recordsRoutes);
-// Health routes will be added in Commit 9
+app.use('/api/health', healthRoutes);
 
 // ─── 404 Handler ────────────────────────────────────
 app.use((_req, res) => {
