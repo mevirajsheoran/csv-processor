@@ -39,11 +39,13 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=ruok"
     healthcheck:
       test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 15s
     networks:
       - csv-network
 
@@ -57,8 +59,8 @@ services:
       - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ZOOKEEPER_CONNECT: csv-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://csv-kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -69,7 +71,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
-      start_period: 30s
+      start_period: 40s
     networks:
       - csv-network
 
@@ -80,12 +82,12 @@ services:
       - "3000:3000"
     environment:
       PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/csv_processor
+      DATABASE_URL: postgresql://postgres:postgres@csv-postgres:5432/csv_processor
       DB_POOL_SIZE: 10
-      REDIS_HOST: redis
+      REDIS_HOST: csv-redis
       REDIS_PORT: 6379
       CACHE_TTL: 3600
-      KAFKA_BROKERS: kafka:29092
+      KAFKA_BROKERS: csv-kafka:29092
       KAFKA_TOPIC: records.uploaded
       KAFKA_CLIENT_ID_API: csv-api-producer
       LOG_LEVEL: info
@@ -104,12 +106,12 @@ services:
     build: ./consumer-service
     container_name: csv-consumer
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/csv_processor
+      DATABASE_URL: postgresql://postgres:postgres@csv-postgres:5432/csv_processor
       DB_POOL_SIZE: 5
-      REDIS_HOST: redis
+      REDIS_HOST: csv-redis
       REDIS_PORT: 6379
       CACHE_TTL: 3600
-      KAFKA_BROKERS: kafka:29092
+      KAFKA_BROKERS: csv-kafka:29092
       KAFKA_TOPIC: records.uploaded
       KAFKA_GROUP_ID: csv-consumer-group
       KAFKA_CLIENT_ID_CONSUMER: csv-consumer

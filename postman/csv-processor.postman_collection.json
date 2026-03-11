@@ -1,0 +1,103 @@
+{
+  "info": {
+    "name": "CSV Processor API",
+    "description": "Backend system for CSV upload, processing, and cached retrieval",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        },
+        "description": "Check system health and service connectivity"
+      }
+    },
+    {
+      "name": "Upload CSV - Products",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "sample-data/products.csv",
+              "description": "CSV file to upload"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/upload",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "upload"]
+        },
+        "description": "Upload products.csv — first upload inserts all records"
+      }
+    },
+    {
+      "name": "Upload CSV - Products Updated",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "sample-data/products-updated.csv",
+              "description": "Updated CSV file to upload"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/upload",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "upload"]
+        },
+        "description": "Upload products-updated.csv — demonstrates upsert behavior"
+      }
+    },
+    {
+      "name": "Upload CSV - No File (Error)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/upload",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "upload"]
+        },
+        "description": "Attempt upload without a file — expects 400 error"
+      }
+    },
+    {
+      "name": "Fetch All Records",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/records",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "records"]
+        },
+        "description": "Retrieve all records — check meta.source for cache vs database"
+      }
+    }
+  ]
+}

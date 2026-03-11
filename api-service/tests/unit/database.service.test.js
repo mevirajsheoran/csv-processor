@@ -1,27 +1,26 @@
+jest.mock('../../src/db/pool');
+
+const { getPool } = require('../../src/db/pool');
 const { bulkUpsert, getAllRecords, buildBulkUpsertQuery } = require('../../src/services/database.service');
 
-// Mock the pool module
 const mockClient = {
   query: jest.fn(),
   release: jest.fn(),
 };
 
 const mockPool = {
-  connect: jest.fn(() => Promise.resolve(mockClient)),
+  connect: jest.fn(),
   query: jest.fn(),
 };
 
-jest.mock('../../src/db/pool', () => ({
-  getPool: jest.fn(() => mockPool),
-}));
-
 describe('Database Service', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    getPool.mockReturnValue(mockPool);
+    mockPool.connect.mockResolvedValue(mockClient);
   });
 
   describe('buildBulkUpsertQuery', () => {
-    it('should generate correct parameterized SQL for single record', () => {
+    test('should generate correct parameterized SQL for single record', () => {
       const records = [
         { sku: 'SKU001', name: 'Widget', description: 'Desc', category: 'Cat', price: 29.99, quantity: 100 },
       ];
@@ -36,7 +35,7 @@ describe('Database Service', () => {
       expect(params).toEqual(['SKU001', 'Widget', 'Desc', 'Cat', 29.99, 100]);
     });
 
-    it('should generate correct parameterized SQL for multiple records', () => {
+    test('should generate correct parameterized SQL for multiple records', () => {
       const records = [
         { sku: 'SKU001', name: 'Widget', description: 'D1', category: 'C1', price: 10, quantity: 5 },
         { sku: 'SKU002', name: 'Gadget', description: 'D2', category: 'C2', price: 20, quantity: 10 },
@@ -52,7 +51,7 @@ describe('Database Service', () => {
   });
 
   describe('bulkUpsert', () => {
-    it('should execute BEGIN, query, and COMMIT on the same client', async () => {
+    test('should execute BEGIN, query, and COMMIT on the same client', async () => {
       const records = [
         { sku: 'SKU001', name: 'Widget', description: 'D', category: 'C', price: 10, quantity: 5 },
       ];
@@ -71,7 +70,7 @@ describe('Database Service', () => {
       expect(result).toEqual({ inserted: 1, updated: 0, total: 1 });
     });
 
-    it('should call ROLLBACK on query failure', async () => {
+    test('should call ROLLBACK on query failure', async () => {
       const records = [
         { sku: 'SKU001', name: 'Widget', description: 'D', category: 'C', price: 10, quantity: 5 },
       ];
@@ -85,20 +84,21 @@ describe('Database Service', () => {
       expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
     });
 
-    it('should always release client even on error', async () => {
+    test('should always release client even on error', async () => {
       const records = [
         { sku: 'SKU001', name: 'Widget', description: 'D', category: 'C', price: 10, quantity: 5 },
       ];
 
       mockClient.query
         .mockResolvedValueOnce() // BEGIN
-        .mockRejectedValueOnce(new Error('DB error')); // INSERT fails
+        .mockRejectedValueOnce(new Error('DB error')) // INSERT fails
+        .mockResolvedValueOnce(); // ROLLBACK
 
       await expect(bulkUpsert(records)).rejects.toThrow();
       expect(mockClient.release).toHaveBeenCalledTimes(1);
     });
 
-    it('should correctly count inserts vs updates from xmax', async () => {
+    test('should correctly count inserts vs updates from xmax', async () => {
       const records = [
         { sku: 'SKU001', name: 'W1', description: 'D', category: 'C', price: 10, quantity: 5 },
         { sku: 'SKU002', name: 'W2', description: 'D', category: 'C', price: 20, quantity: 10 },
@@ -123,7 +123,7 @@ describe('Database Service', () => {
   });
 
   describe('getAllRecords', () => {
-    it('should return parsed records with float prices', async () => {
+    test('should return parsed records with float prices', async () => {
       mockPool.query.mockResolvedValueOnce({
         rows: [
           { id: 1, sku: 'SKU001', name: 'Widget', price: '29.99', quantity: 100 },
@@ -138,7 +138,7 @@ describe('Database Service', () => {
       expect(records[0].price).toBe(29.99);
     });
 
-    it('should throw DatabaseError on query failure', async () => {
+    test('should throw DatabaseError on query failure', async () => {
       mockPool.query.mockRejectedValueOnce(new Error('Connection lost'));
 
       await expect(getAllRecords()).rejects.toThrow('Failed to fetch records');
