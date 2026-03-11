@@ -40,7 +40,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     healthcheck:
-      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -70,6 +70,58 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
+    networks:
+      - csv-network
+
+  api:
+    build: ./api-service
+    container_name: csv-api
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/csv_processor
+      DB_POOL_SIZE: 10
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_TTL: 3600
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_TOPIC: records.uploaded
+      KAFKA_CLIENT_ID_API: csv-api-producer
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - csv-network
+
+  consumer:
+    build: ./consumer-service
+    container_name: csv-consumer
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/csv_processor
+      DB_POOL_SIZE: 5
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_TTL: 3600
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_TOPIC: records.uploaded
+      KAFKA_GROUP_ID: csv-consumer-group
+      KAFKA_CLIENT_ID_CONSUMER: csv-consumer
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: on-failure
     networks:
       - csv-network
 
